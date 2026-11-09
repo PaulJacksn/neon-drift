@@ -7,6 +7,7 @@ var _body: Node3D
 var _trail: GPUParticles3D
 
 func _ready() -> void:
+	scale = Vector3(1.25, 1.25, 1.25)
 	_body = Node3D.new()
 	add_child(_body)
 	_build_ship()
@@ -94,7 +95,7 @@ func _build_ship() -> void:
 
 func _build_trail() -> void:
 	_trail = GPUParticles3D.new()
-	_trail.amount = 64
+	_trail.amount = 48
 	_trail.lifetime = 0.45
 	_trail.local_coords = true
 	_trail.position = Vector3(0, 0, 0.9)
@@ -117,7 +118,7 @@ func _build_trail() -> void:
 	add_child(_trail)
 
 ## Steer toward target (world x/y), bank into the turn, bob while hovering.
-func update_ship(dt: float, target: Vector2, speed_ratio: float, hovering: bool) -> void:
+func update_ship(dt: float, target: Vector2, speed_ratio: float, hovering: bool, pulse: float) -> void:
 	_hover_time += dt
 	var prev := Vector2(position.x, position.y)
 	var rate := 7.0 if hovering else 13.0
@@ -133,8 +134,8 @@ func update_ship(dt: float, target: Vector2, speed_ratio: float, hovering: bool)
 	var target_pitch := clampf(velocity.y * 0.03, -0.3, 0.3)
 	_body.rotation.z = lerpf(_body.rotation.z, target_roll, 1.0 - exp(-10.0 * dt))
 	_body.rotation.x = lerpf(_body.rotation.x, target_pitch, 1.0 - exp(-10.0 * dt))
-	# Trail gets denser and longer with speed.
-	_trail.amount_ratio = 0.5 + speed_ratio * 0.5
+	# Trail gets denser and longer with speed, and pulses on the beat.
+	_trail.amount_ratio = 0.5 + speed_ratio * 0.4 + pulse * 0.2
 
 func set_visible_ship(visible: bool) -> void:
 	_body.visible = visible

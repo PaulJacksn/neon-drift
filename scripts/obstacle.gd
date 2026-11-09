@@ -11,6 +11,7 @@ var halfs: Array[Vector2] = []
 
 var _boxes: Array[MeshInstance3D] = []
 var _edge_boxes: Array[MeshInstance3D] = []
+var _cores: Array[MeshInstance3D] = []
 
 func _ready() -> void:
 	var mat := StandardMaterial3D.new()
@@ -21,6 +22,10 @@ func _ready() -> void:
 	var edge := StandardMaterial3D.new()
 	edge.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	edge.albedo_color = Color(1.0, 0.55, 0.2)
+	var core := StandardMaterial3D.new()
+	core.albedo_color = Color(0.05, 0.02, 0.05)
+	core.metallic = 0.3
+	core.roughness = 0.6
 	for i in 2:
 		var box := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
@@ -36,6 +41,13 @@ func _ready() -> void:
 		eb.material_override = edge
 		add_child(eb)
 		_edge_boxes.append(eb)
+		var cb := MeshInstance3D.new()
+		var cmesh := BoxMesh.new()
+		cmesh.size = Vector3.ONE
+		cb.mesh = cmesh
+		cb.material_override = core
+		add_child(cb)
+		_cores.append(cb)
 	visible = false
 
 func _place(idx: int, center: Vector2, size: Vector2) -> void:
@@ -45,6 +57,9 @@ func _place(idx: int, center: Vector2, size: Vector2) -> void:
 	_edge_boxes[idx].visible = true
 	_edge_boxes[idx].position = Vector3(center.x, center.y, -0.52)
 	_edge_boxes[idx].scale = Vector3(size.x + 0.12, 0.12, 0.06)
+	_cores[idx].visible = true
+	_cores[idx].position = Vector3(center.x, center.y, -0.53)
+	_cores[idx].scale = Vector3(size.x * 0.72, size.y * 0.72, 0.06)
 	centers.append(center)
 	halfs.append(size * 0.5)
 
@@ -55,6 +70,8 @@ func setup(pattern: int, rng: RandomNumberGenerator) -> void:
 	_boxes[1].visible = false
 	_edge_boxes[0].visible = false
 	_edge_boxes[1].visible = false
+	_cores[0].visible = false
+	_cores[1].visible = false
 	match pattern:
 		Pattern.SINGLE:
 			var pos := Vector2(rng.randf_range(-2.6, 2.6), rng.randf_range(-2.6, 2.6))

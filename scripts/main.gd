@@ -32,6 +32,8 @@ var combo := 0
 var combo_mult := 1
 var time_played := 0.0
 var _shake := 0.0
+var _fov_punch := 0.0
+var _speed_boost := 0.0
 var _time := 0.0
 var _beat_timer := 0.0
 var _target := Vector2.ZERO
@@ -87,14 +89,14 @@ func _build_environment() -> void:
 	env.ambient_light_energy = 0.6
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.glow_enabled = true
-	env.glow_intensity = 0.9
+	env.glow_intensity = 0.8
 	env.glow_strength = 1.3
-	env.glow_bloom = 0.08
+	env.glow_bloom = 0.06
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
 	env.fog_light_color = Color(0.05, 0.02, 0.12)
-	env.fog_depth_begin = 18.0
-	env.fog_depth_end = 115.0
+	env.fog_depth_begin = 14.0
+	env.fog_depth_end = 80.0
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -174,6 +176,8 @@ func start_game() -> void:
 	speed = BASE_SPEED
 	_target = Vector2.ZERO
 	_shake = 0.0
+	_fov_punch = 0.0
+	_speed_boost = 0.0
 	_is_new_best = false
 	_panel_shown = false
 	_last_hud_score = -1
@@ -295,12 +299,13 @@ func _beat_values(dt: float) -> Vector2:
 func _update_menu(delta: float) -> void:
 	var beat := _beat_values(delta)
 	_tunnel.update_world(delta, 8.0, beat.x, beat.y)
-	_ship.update_ship(delta, Vector2.ZERO, 0.0, true)
+	_ship.update_ship(delta, Vector2.ZERO, 0.0, true, beat.y)
 	_camera.fov = lerpf(_camera.fov, 68.0, 1.0 - exp(-3.0 * delta))
 
 func _update_playing(delta: float) -> void:
 	time_played += delta
-	speed = minf(MAX_SPEED, BASE_SPEED + ACCEL * time_played)
+	_speed_boost = maxf(0.0, _speed_boost - delta * 1.5)
+	speed = minf(MAX_SPEED, BASE_SPEED + ACCEL * time_played + _speed_boost)
 	var ratio := (speed - BASE_SPEED) / (MAX_SPEED - BASE_SPEED)
 	score += speed * delta * 0.5
 	# Music may have finished generating after the tap; start it when ready.
@@ -308,7 +313,7 @@ func _update_playing(delta: float) -> void:
 		_audio.start_music()
 	var beat := _beat_values(delta)
 	_tunnel.update_world(delta, speed, beat.x, beat.y)
-	_ship.update_ship(delta, _target, ratio, false)
+	_ship.update_ship(delta, _target, ratio, false, beat.y)
 	_update_spawning(delta, ratio)
 	_update_entities(delta, true)
 	_update_camera(delta, ratio)
@@ -333,7 +338,8 @@ func _update_gameover(delta: float) -> void:
 		_hud.show_gameover(int(score), best_score, _is_new_best)
 
 func _update_camera(delta: float, ratio: float) -> void:
-	var target_fov := 68.0 + ratio * 22.0
+	_fov_punch = maxf(0.0, _fov_punch - delta * 10.0)
+	var target_fov := 68.0 + ratio * 22.0 + _fov_punch
 	_camera.fov = lerpf(_camera.fov, target_fov, 1.0 - exp(-3.0 * delta))
 	_shake = maxf(0.0, _shake - delta * 2.2)
 	_camera.position = Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), 0) * _shake * 0.3
@@ -432,12 +438,14 @@ func _check_near_miss(ob, ship_xy: Vector2) -> void:
 		_hud.show_popup("NEAR MISS +50")
 		_audio.play_whoosh()
 		_shake = maxf(_shake, 0.3)
+		_fov_punch = 4.0
 
 func _gate_hit(g) -> void:
 	combo += 1
 	combo_mult = clampi(combo, 1, 8)
 	var points := 100 * combo_mult
 	score += float(points)
+	_speed_boost = minf(_speed_boost + 2.0, 6.0)
 	_hud.set_combo(combo, combo_mult)
 	_hud.show_popup("RING +%d" % points)
 	_audio.play_chime(combo)

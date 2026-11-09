@@ -86,7 +86,7 @@ func _build_streaks() -> void:
 
 func _build_starfield() -> void:
 	var particles := GPUParticles3D.new()
-	particles.amount = 240
+	particles.amount = 180
 	particles.lifetime = 8.0
 	particles.local_coords = false
 	particles.position = Vector3(0, 0, -60)
